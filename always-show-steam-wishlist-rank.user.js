@@ -68,9 +68,22 @@
     return inHtml ? inHtml[1] : null;
   }
 
+  // ---- 是否為「擁有者自訂排序」（自己清單顯示「您的排序」，別人清單顯示「個人自訂排序」）----
+  // 此排序模式下，網址不帶 sort 參數；切到其他排序（名稱、定價、發行日期…）才會帶上
+  // ?sort=...。以此判斷語言無關、DOM 無關，也不受 Steam 每次改版都會變的雜湊 class 影響。
+  // 這種模式下清單本身已按擁有者順序排列，額外的排名徽章多餘，故一律不顯示。
+  function isOwnerCustomSort() {
+    return !new URLSearchParams(location.search).has("sort");
+  }
+
   // ---- 掃描目前可見的所有列 ----
   function applyAll() {
     if (!rankMap) return; // 尚未載入（或不在願望清單頁）時，整段掃描直接略過
+    if (isOwnerCustomSort()) {
+      // 擁有者自訂排序：移除既有徽章並略過（含切到此排序時的清理）
+      document.querySelectorAll(".wl-rank-badge").forEach((b) => b.remove());
+      return;
+    }
     document.querySelectorAll("div[data-index]").forEach((row) => {
       if (row.querySelector('a[href*="/app/"]')) addBadge(row);
     });
@@ -79,14 +92,6 @@
   // ---- 在單一列加上/更新排名徽章 ----
   function addBadge(row) {
     if (!rankMap) return;
-
-    // 自己清單的「您的排序」（看別人清單則為「個人自訂排序」）模式下，每列已有原生排名
-    // 輸入框，直接略過（避免重複，且拖曳後不會顯示過期數字）
-    if (row.querySelector('input[type="text"]')) {
-      const old = row.querySelector(":scope > .wl-rank-badge");
-      if (old) old.remove();
-      return;
-    }
 
     const appid = appidOfRow(row);
     let badge = row.querySelector(":scope > .wl-rank-badge");
