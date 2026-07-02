@@ -1,1 +1,1 @@
-# Always Show Your Steam Wishlist Rank
+# Always Show Steam Wishlist Rank
