@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         Always Show Steam Wishlist Rank
-// @name:zh-TW   永遠顯示 Steam 願望清單順序
+// @name:zh-TW   永遠顯示 Steam 願望清單排序
 // @namespace    https://github.com/pei-lun/always-show-your-steam-wishlist-rank
 // @version      0.1.0
 // @description       Show wishlist rank on every item in any sort order. Data from Steam's official IWishlistService API.
-// @description:zh-TW 在任何排序方式下，於 Steam 願望清單每個項目左上角顯示順序數字。資料來自 Steam 官方 IWishlistService API。
+// @description:zh-TW 在任何排序方式下，於 Steam 願望清單每個項目左上角顯示排序數字。資料來自 Steam 官方 IWishlistService API。
 // @author       Pei-Lun Huang
 // @match        https://store.steampowered.com/*
 // @license      MIT
@@ -20,10 +20,10 @@
   let rankMap = null; // appid(string) -> rank(number)，rank 即 API 的 priority 欄位
   let fetching = false;
 
-  // ---- 從官方 API 載入排名對照表 ----
+  // ---- 從官方 API 載入排序對照表 ----
   // priority 是清單擁有者設定的原始排序值。注意它不保證是連續的 1..N：
   // 移除過的項目會留下空號、從未排序的項目為 0（在看別人的「個人自訂排序」清單上尤其明顯）。
-  // 我們直接顯示這個原始值，0 則不顯示徽章。
+  // 我們直接顯示這個原始值，0 則不顯示標誌。
   // 注意：一定要用 credentials:'omit'，帶 cookie 會被 CORS 擋（API 回傳 ACAO:*）。
   async function loadRanks() {
     if (rankMap || fetching) return rankMap;
@@ -31,7 +31,7 @@
     try {
       const steamid = getSteamId();
       if (!steamid) {
-        console.warn(LOG, "找不到 steamid，無法載入排名");
+        console.warn(LOG, "找不到 steamid，無法載入排序");
         return null;
       }
       const url = `https://api.steampowered.com/IWishlistService/GetWishlist/v1/?steamid=${steamid}`;
@@ -43,10 +43,10 @@
         if (it.priority && it.priority > 0) map[String(it.appid)] = it.priority;
       }
       rankMap = map;
-      console.log(LOG, `已載入 ${Object.keys(map).length} 筆排名`);
+      console.log(LOG, `已載入 ${Object.keys(map).length} 筆排序`);
       applyAll();
     } catch (e) {
-      console.error(LOG, "載入排名失敗", e);
+      console.error(LOG, "載入排序失敗", e);
     } finally {
       fetching = false;
     }
@@ -60,7 +60,7 @@
     if (inUrl) return inUrl[1];
     // /wishlist/id/vanity：擁有者 steamid 在願望清單 React 元件的 SSR props 裡，是雙重
     // JSON 編碼、引號被跳脫的 {\"steamid\":\"...\",\"sort\":...}。未跳脫的 "steamid":"..."
-    // 是「觀看者本人」的 session 資料，撈到它會在別人的清單上顯示自己的排名，故不使用。
+    // 是「觀看者本人」的 session 資料，撈到它會在別人的清單上顯示自己的排序，故不使用。
     // 鎖定緊接 \"sort\" 的那筆，確保是「正在檢視的這份清單」的擁有者。
     const inHtml = document.documentElement.outerHTML.match(
       /\\"steamid\\":\\"(\d{17})\\",\\"sort\\"/,
@@ -71,16 +71,40 @@
   // ---- 是否為「擁有者自訂排序」（自己清單顯示「您的排序」，別人清單顯示「個人自訂排序」）----
   // 此排序模式下，網址不帶 sort 參數；切到其他排序（名稱、定價、發行日期…）才會帶上
   // ?sort=...。以此判斷語言無關、DOM 無關，也不受 Steam 每次改版都會變的雜湊 class 影響。
-  // 這種模式下清單本身已按擁有者順序排列，額外的排名徽章多餘，故一律不顯示。
+  // 這種模式下清單本身已是擁有者的排序，額外的排序標誌多餘，故預設不顯示；
+  // 但搜尋進行中是例外（見 isSearching），因為清單被過濾成子集合、排序不再連續。
   function isOwnerCustomSort() {
     return !new URLSearchParams(location.search).has("sort");
+  }
+
+  // ---- 願望清單自己的搜尋框 ----
+  // 它只有會隨改版變動的雜湊 class、沒有 id/name，placeholder 又隨語言變，都不可靠。
+  // 但它是頁面上唯一「可見、非商店搜尋（name=term）、且不在全站頁首內」的文字輸入框，
+  // 以此定位語言無關、class 無關。
+  function getWishlistSearchInput() {
+    return [
+      ...document.querySelectorAll(
+        'input:not([type]), input[type="text"], input[type="search"]',
+      ),
+    ].find(
+      (el) =>
+        el.name !== "term" &&
+        !el.closest("#global_header") &&
+        el.offsetParent !== null,
+    );
+  }
+
+  // ---- 使用者是否正在搜尋（搜尋框有非空白內容）----
+  function isSearching() {
+    const input = getWishlistSearchInput();
+    return !!(input && input.value.trim());
   }
 
   // ---- 掃描目前可見的所有列 ----
   function applyAll() {
     if (!rankMap) return; // 尚未載入（或不在願望清單頁）時，整段掃描直接略過
-    if (isOwnerCustomSort()) {
-      // 擁有者自訂排序：移除既有徽章並略過（含切到此排序時的清理）
+    if (isOwnerCustomSort() && !isSearching()) {
+      // 擁有者自訂排序且未搜尋：移除既有標誌並略過（含切到此排序、或清空搜尋時的清理）
       document.querySelectorAll(".wl-rank-badge").forEach((b) => b.remove());
       return;
     }
@@ -89,7 +113,7 @@
     });
   }
 
-  // ---- 在單一列加上/更新排名徽章 ----
+  // ---- 在單一列加上/更新排序標誌 ----
   function addBadge(row) {
     if (!rankMap) return;
 
@@ -156,6 +180,8 @@
   });
   // 捲動作為備援（有些虛擬化清單只改 transform 不動 DOM 結構）
   window.addEventListener("scroll", schedule, true);
+  // 打字／清空搜尋框時立即重繪（過濾造成的 DOM 變動雖也會觸發 MutationObserver，此為保險）
+  document.addEventListener("input", schedule, true);
 
   // ---- 判斷目前是否在願望清單頁 ----
   // 用 \/+ 容忍開頭的重複斜線：下拉選單的連結是 //wishlist/（Steam 自己產錯的雙斜線），
@@ -164,7 +190,7 @@
     return /^\/+wishlist(\/|$)/.test(location.pathname);
   }
 
-  // ---- 等清單渲染出來再載入排名 ----
+  // ---- 等清單渲染出來再載入排序 ----
   function initPoll(tries) {
     if (!onWishlist()) return; // 途中已離開願望清單就停手
     if (document.querySelector('div[data-index] a[href*="/app/"]')) {
@@ -188,7 +214,7 @@
     }
     if (location.pathname === lastPath) return; // 同一份清單已處理，避免重複載入
     lastPath = location.pathname;
-    rankMap = null; // 換到別份清單要重載擁有者的排名
+    rankMap = null; // 換到別份清單要重載擁有者的排序
     fetching = false;
     initPoll(0);
   }
