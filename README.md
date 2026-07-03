@@ -13,5 +13,12 @@
 
 ## 安裝
 
-需要 Violentmonkey／Tampermonkey 等 UserScript 管理器，安裝
-`always-show-steam-wishlist-rank.user.js` 即可。
+需要 Violentmonkey／Tampermonkey 等 UserScript 管理器。裝好管理器後，開啟
+[安裝連結](https://raw.githubusercontent.com/pei-lun/always-show-steam-wishlist-rank/refs/heads/main/always-show-steam-wishlist-rank.user.js)
+即會跳出安裝提示。
+
+## 更新
+
+腳本內建 `@updateURL`／`@downloadURL`，指向本專案 GitHub 的 raw 檔案，無需
+Greasy Fork 等平台。管理器會定期檢查並在有新版時自動更新（也可在管理器面板手動
+觸發「檢查更新」）。

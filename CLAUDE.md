@@ -11,7 +11,7 @@ Whenever you change code, check and update the following in the same commit:
 - `README.md` (audience: anyone — human or AI): update if the change affects what the project is, how to run it, environment setup, public behavior, or contribution workflow.
 - `CLAUDE.md` (audience: Claude / agents): update if the change affects build/test/run commands listed here, coding conventions, project gotchas, invariants, or any other rule described in this file.
 
-## Reading `always-show-your-steam-wishlist-rank.user.js`
+## Reading `always-show-steam-wishlist-rank.user.js`
 
 The `@icon` line in the UserScript metadata block embeds an icon as a
 base64 `data:` URI. That single line is tens of thousands of tokens and
@@ -22,7 +22,7 @@ number is not fixed — the metadata block may change — so find it each time
 rather than assuming a position:
 
 ```bash
-grep -n "@icon" always-show-your-steam-wishlist-rank.user.js | cut -c1-60
+grep -n "@icon" always-show-steam-wishlist-rank.user.js | cut -c1-60
 ```
 
 Then read the ranges around it (e.g. the metadata header above it and the

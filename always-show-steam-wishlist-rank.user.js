@@ -1,8 +1,10 @@
 // ==UserScript==
 // @name         Always Show Steam Wishlist Rank
 // @name:zh-TW   永遠顯示 Steam 願望清單排序
-// @namespace    https://github.com/pei-lun/always-show-your-steam-wishlist-rank
+// @namespace    https://github.com/pei-lun/always-show-steam-wishlist-rank
 // @version      0.1.0
+// @updateURL    https://raw.githubusercontent.com/pei-lun/always-show-steam-wishlist-rank/refs/heads/main/always-show-steam-wishlist-rank.user.js
+// @downloadURL  https://raw.githubusercontent.com/pei-lun/always-show-steam-wishlist-rank/refs/heads/main/always-show-steam-wishlist-rank.user.js
 // @description       Show wishlist rank on every item in any sort order. Data from Steam's official IWishlistService API.
 // @description:zh-TW 在任何排序方式下，於 Steam 願望清單每個項目左上角顯示排序數字。資料來自 Steam 官方 IWishlistService API。
 // @author       Pei-Lun Huang
